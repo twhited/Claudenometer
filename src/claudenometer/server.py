@@ -160,14 +160,15 @@ def refresh_connection() -> dict:
 # Entry point
 # ---------------------------------------------------------------------------
 
-def _run_sse(host: str, port: int, api_key: Optional[str]) -> None:
-    """Run the MCP server over SSE with optional API-key authentication."""
-    from mcp.server.sse import SseServerTransport
+def _run_http(host: str, port: int, api_key: Optional[str]) -> None:
+    """Run the MCP server over Streamable HTTP (MCP spec 2025-03-26)."""
+    import anyio
+    from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
     from starlette.applications import Starlette
     from starlette.middleware import Middleware
     from starlette.middleware.base import BaseHTTPMiddleware
     from starlette.responses import PlainTextResponse
-    from starlette.routing import Mount, Route
+    from starlette.routing import Mount
     import uvicorn
 
     class _APIKeyMiddleware(BaseHTTPMiddleware):
@@ -182,36 +183,35 @@ def _run_sse(host: str, port: int, api_key: Optional[str]) -> None:
                 return PlainTextResponse("Unauthorized", status_code=401)
             return await call_next(request)
 
-    sse = SseServerTransport("/messages/")
-
-    async def handle_sse(request):
-        async with sse.connect_sse(
-            request.scope, request.receive, request._send
-        ) as streams:
-            await mcp._mcp_server.run(
-                streams[0],
-                streams[1],
-                mcp._mcp_server.create_initialization_options(),
-            )
-
-    middleware = (
-        [Middleware(_APIKeyMiddleware, key=api_key)] if api_key else []
+    session_manager = StreamableHTTPSessionManager(
+        app=mcp._mcp_server,
+        event_store=None,
+        json_response=False,
+        stateless=True,
     )
 
+    async def handle_mcp(scope, receive, send):
+        await session_manager.handle_request(scope, receive, send)
+
+    middleware = [Middleware(_APIKeyMiddleware, key=api_key)] if api_key else []
+
     app = Starlette(
-        routes=[
-            Route("/sse", endpoint=handle_sse),
-            Mount("/messages/", app=sse.handle_post_message),
-        ],
+        routes=[Mount("/", app=handle_mcp)],
         middleware=middleware,
     )
 
+    async def serve():
+        async with session_manager:
+            config = uvicorn.Config(app, host=host, port=port, log_level="info")
+            server = uvicorn.Server(config)
+            await server.serve()
+
     print(
-        f"Claudenometer SSE server listening on http://{host}:{port}/sse",
+        f"Claudenometer MCP server listening on http://{host}:{port}/mcp",
         f"{'(API key auth enabled)' if api_key else '(WARNING: no API key set)'}",
         file=sys.stderr,
     )
-    uvicorn.run(app, host=host, port=port)
+    anyio.run(serve)
 
 
 def main() -> None:
@@ -221,7 +221,7 @@ def main() -> None:
         host = os.environ.get("HOST", "0.0.0.0")
         port = int(os.environ.get("PORT", "8000"))
         api_key = os.environ.get("API_KEY") or None
-        _run_sse(host, port, api_key)
+        _run_http(host, port, api_key)
     else:
         mcp.run()
 
