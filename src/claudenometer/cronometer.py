@@ -172,20 +172,17 @@ class CronometerClient:
         """
         r = self._session.get(CRONOMETER_NOCACHE, timeout=15)
         r.raise_for_status()
-        # Try progressively looser patterns to survive Cronometer JS bundle changes
-        for pattern in [
-            r"'([0-9A-F]{32})\.cache\.js'",   # original: uppercase, single quotes
-            r'"([0-9A-F]{32})\.cache\.js"',    # uppercase, double quotes
-            r"'([0-9a-f]{32})\.cache\.js'",    # lowercase, single quotes
-            r'"([0-9a-f]{32})\.cache\.js"',    # lowercase, double quotes
-            r"([0-9A-Fa-f]{32})\.cache\.js",   # any case, no quotes
-        ]:
-            hashes = re.findall(pattern, r.text)
+        # The hash and '.cache.js' may be in separate variables (minified JS),
+        # so search backwards from '.cache.js' for the nearest 32-char hex string.
+        cache_match = re.search(r'\.cache\.js', r.text)
+        if cache_match:
+            region = r.text[max(0, cache_match.start() - 300):cache_match.start()]
+            hashes = re.findall(r'[0-9A-Fa-f]{32}', region)
             if hashes:
-                return hashes[0]
+                return hashes[-1]
         raise CronometerError(
             "Could not find GWT permutation hash in cronometer.nocache.js. "
-            f"File starts with: {r.text[:300]!r}"
+            f"File excerpt: {r.text[:300]!r}"
         )
 
     def _build_payload(self, method: str, params: list) -> str:
