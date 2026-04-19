@@ -162,6 +162,7 @@ def refresh_connection() -> dict:
 
 def _run_http(host: str, port: int, api_key: Optional[str]) -> None:
     """Run the MCP server over Streamable HTTP (MCP spec 2025-03-26)."""
+    import anyio
     from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
     from starlette.applications import Starlette
     from starlette.middleware import Middleware
@@ -199,12 +200,19 @@ def _run_http(host: str, port: int, api_key: Optional[str]) -> None:
         middleware=middleware,
     )
 
+    async def serve():
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(session_manager.run)
+            config = uvicorn.Config(app, host=host, port=port, log_level="info")
+            server = uvicorn.Server(config)
+            await server.serve()
+
     print(
         f"Claudenometer MCP server listening on http://{host}:{port}/mcp",
         f"{'(API key auth enabled)' if api_key else '(WARNING: no API key set)'}",
         file=sys.stderr,
     )
-    uvicorn.run(app, host=host, port=port)
+    anyio.run(serve)
 
 
 def main() -> None:
