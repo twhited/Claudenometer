@@ -177,7 +177,8 @@ def _run_sse(host: str, port: int, api_key: Optional[str]) -> None:
 
         async def dispatch(self, request, call_next):
             auth = request.headers.get("Authorization", "")
-            if auth != f"Bearer {self._key}":
+            token = request.query_params.get("api_key", "")
+            if auth != f"Bearer {self._key}" and token != self._key:
                 return PlainTextResponse("Unauthorized", status_code=401)
             return await call_next(request)
 
