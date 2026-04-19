@@ -162,6 +162,7 @@ def refresh_connection() -> dict:
 
 def _run_http(host: str, port: int, api_key: Optional[str]) -> None:
     """Run the MCP server over Streamable HTTP (MCP spec 2025-03-26)."""
+    import anyio
     from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
     from starlette.applications import Starlette
     from starlette.middleware import Middleware
