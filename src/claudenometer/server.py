@@ -162,7 +162,6 @@ def refresh_connection() -> dict:
 
 def _run_http(host: str, port: int, api_key: Optional[str]) -> None:
     """Run the MCP server over Streamable HTTP (MCP spec 2025-03-26)."""
-    import anyio
     from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
     from starlette.applications import Starlette
     from starlette.middleware import Middleware
@@ -201,8 +200,7 @@ def _run_http(host: str, port: int, api_key: Optional[str]) -> None:
     )
 
     async def serve():
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(session_manager.run)
+        async with session_manager.run():
             config = uvicorn.Config(app, host=host, port=port, log_level="info")
             server = uvicorn.Server(config)
             await server.serve()
