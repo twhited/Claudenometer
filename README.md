@@ -1,4 +1,4 @@
-# ChronoConnect
+# Claudenometer
 
 MCP server that gives Claude direct read/write access to your [Cronometer](https://cronometer.com) diary.  Say "log 2 scrambled eggs and a coffee" in Claude and the entries appear in Cronometer immediately.
 
@@ -18,8 +18,8 @@ MCP server that gives Claude direct read/write access to your [Cronometer](https
 ## Quick start — local (stdio)
 
 ```bash
-git clone https://github.com/twhited/ChronoConnect
-cd ChronoConnect
+git clone https://github.com/twhited/Claudenometer
+cd Claudenometer
 pip install -e .
 cp .env.example .env
 # Edit .env — fill in CRONOMETER_EMAIL and CRONOMETER_PASSWORD
@@ -30,8 +30,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ```json
 {
   "mcpServers": {
-    "ChronoConnect": {
-      "command": "chronoconnect",
+    "Claudenometer": {
+      "command": "claudenometer",
       "env": {
         "CRONOMETER_EMAIL": "your@email.com",
         "CRONOMETER_PASSWORD": "yourpassword",
@@ -42,7 +42,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-Restart Claude Desktop.  You should see ChronoConnect listed under connected tools.
+Restart Claude Desktop.  You should see Claudenometer listed under connected tools.
 
 ---
 
@@ -53,8 +53,8 @@ Useful for always-on access from Claude on the web or mobile.
 ### 1. Set up the server
 
 ```bash
-git clone https://github.com/twhited/ChronoConnect
-cd ChronoConnect
+git clone https://github.com/twhited/Claudenometer
+cd Claudenometer
 cp .env.example .env
 ```
 
@@ -89,7 +89,7 @@ In your Claude config, add the remote SSE server:
 ```json
 {
   "mcpServers": {
-    "ChronoConnect": {
+    "Claudenometer": {
       "url": "https://your-domain-or-ip:8000/sse",
       "headers": {
         "Authorization": "Bearer your-strong-random-key-here"
@@ -114,9 +114,9 @@ Use **Container Manager** (Synology) or **Container Station** (QNAP):
 
 Cronometer has no public API.  It uses **GWT-RPC** (Google Web Toolkit) — a binary-ish protocol where the client and server exchange pipe-delimited payloads over HTTPS.
 
-ChronoConnect reverse-engineers this protocol.  The main fragility is a **permutation hash** baked into each Cronometer JS build.  When Cronometer redeploys their frontend, the hash changes.
+Claudenometer reverse-engineers this protocol.  The main fragility is a **permutation hash** baked into each Cronometer JS build.  When Cronometer redeploys their frontend, the hash changes.
 
-ChronoConnect handles this automatically:
+Claudenometer handles this automatically:
 - **On every startup**, it fetches `cronometer.nocache.js` and extracts the current hash.
 - **At any time**, you can say "refresh the Cronometer connection" and Claude will call `refresh_connection` without restarting the server.
 

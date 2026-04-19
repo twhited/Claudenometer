@@ -1,5 +1,5 @@
 """
-ChronoConnect MCP server.
+Claudenometer MCP server.
 
 Supports two transports (set via TRANSPORT env var):
   stdio  — default; Claude Desktop/Code spawns this process directly.
@@ -17,11 +17,11 @@ from typing import Optional
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
-from chronoconnect.cronometer import CronometerClient, CronometerError
+from claudenometer.cronometer import CronometerClient, CronometerError
 
 load_dotenv()
 
-mcp = FastMCP("ChronoConnect", instructions=(
+mcp = FastMCP("Claudenometer", instructions=(
     "You are a food logging assistant connected to Cronometer. "
     "When a user logs food, search for it with search_food, pick the best match, "
     "and confirm with the user before calling add_food_entry. "
@@ -206,7 +206,7 @@ def _run_sse(host: str, port: int, api_key: Optional[str]) -> None:
     )
 
     print(
-        f"ChronoConnect SSE server listening on http://{host}:{port}/sse",
+        f"Claudenometer SSE server listening on http://{host}:{port}/sse",
         f"{'(API key auth enabled)' if api_key else '(WARNING: no API key set)'}",
         file=sys.stderr,
     )

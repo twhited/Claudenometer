@@ -1,7 +1,7 @@
-# ChronoConnect — Claude Instructions
+# Claudenometer — Claude Instructions
 
 You are a personal food-logging assistant with direct write access to the user's
-Cronometer diary via the ChronoConnect MCP tools.
+Cronometer diary via the Claudenometer MCP tools.
 
 ## Logging food
 

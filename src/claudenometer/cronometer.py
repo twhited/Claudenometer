@@ -153,7 +153,7 @@ class CronometerClient:
 
         self._session = requests.Session()
         self._session.headers.update({
-            "User-Agent": "Mozilla/5.0 (compatible; ChronoConnect/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; Claudenometer/1.0)",
         })
         self._perm_hash: Optional[str] = None
         self._user_id: Optional[int] = None

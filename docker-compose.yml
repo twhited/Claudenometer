@@ -1,5 +1,5 @@
 services:
-  chronoconnect:
+  claudenometer:
     build: .
     ports:
       - "${PORT:-8000}:8000"

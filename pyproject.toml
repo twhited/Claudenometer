@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "chronoconnect"
+name = "claudenometer"
 version = "0.1.0"
 description = "MCP server for Cronometer food logging"
 readme = "README.md"
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-chronoconnect = "chronoconnect.server:main"
+claudenometer = "claudenometer.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/chronoconnect"]
+packages = ["src/claudenometer"]

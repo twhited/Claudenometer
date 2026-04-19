@@ -6,12 +6,12 @@
     "_option_1_local_stdio": {
       "_comment": "LOCAL — Claude Desktop/Code spawns the process on your machine. No server needed.",
       "_instructions": [
-        "1. pip install -e /path/to/ChronoConnect",
+        "1. pip install -e /path/to/Claudenometer",
         "2. cp .env.example .env && fill in credentials",
         "3. Add the block below (without the _comment keys) to your config"
       ],
-      "ChronoConnect": {
-        "command": "chronoconnect",
+      "Claudenometer": {
+        "command": "claudenometer",
         "env": {
           "CRONOMETER_EMAIL": "your@email.com",
           "CRONOMETER_PASSWORD": "yourpassword",
@@ -27,7 +27,7 @@
         "1. Deploy with Docker: docker compose up -d",
         "2. Replace the URL and API_KEY below with your values"
       ],
-      "ChronoConnect": {
+      "Claudenometer": {
         "url": "http://your-server-ip:8000/sse",
         "headers": {
           "Authorization": "Bearer replace-with-your-api-key"
