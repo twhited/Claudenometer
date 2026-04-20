@@ -122,6 +122,7 @@ GWT_REMOVE_SERVING = (
 )
 
 
+
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
@@ -671,6 +672,38 @@ class CronometerClient:
         if "//OK" not in raw:
             raise CronometerError(f"removeServing unexpected response: {raw[:200]}")
         return True
+
+    def create_custom_food(
+        self,
+        name: str,
+        serving_name: str,
+        serving_grams: float,
+        energy_kcal: float,
+        protein_g: float,
+        fat_g: float,
+        carbs_g: float,
+        fiber_g: float = 0.0,
+    ) -> dict:
+        """
+        Create a custom food in the user's Cronometer account.
+
+        Nutrients are per-serving (for serving_grams weight).
+        Returns {"food_id": int, "food_source_id": int, "name": str}.
+
+        NOTE: The exact GWT-RPC payload for saveFood has not been captured
+        from live traffic yet.  This method will raise CronometerError with
+        the raw server response so the payload can be reverse-engineered.
+        To capture it: open Cronometer in Chrome → DevTools → Network tab →
+        create a custom food → copy the saveFood request payload and share it.
+        """
+        self._ensure_logged_in()
+        raise CronometerError(
+            "create_custom_food is not yet implemented: the saveFood GWT-RPC "
+            "payload has not been captured from live Cronometer traffic. "
+            "To implement this, open Cronometer in Chrome DevTools → Network → "
+            "create any custom food → find the POST to /cronometer/app → "
+            "copy the request body and share it."
+        )
 
     # -----------------------------------------------------------------------
     # Public API — diary read (CSV export)

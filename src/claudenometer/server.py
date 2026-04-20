@@ -128,6 +128,49 @@ def add_food_entry(
 
 
 @mcp.tool()
+def create_custom_food(
+    name: str,
+    serving_name: str,
+    serving_grams: float,
+    energy_kcal: float,
+    protein_g: float,
+    fat_g: float,
+    carbs_g: float,
+    fiber_g: float = 0.0,
+) -> dict:
+    """
+    Create a custom food entry in the user's Cronometer account.
+
+    Use this when search_food returns no close match.  Estimate the nutrients
+    from your nutritional knowledge and create a named entry so it appears
+    correctly in the diary.
+
+    Args:
+        name:          Food name (e.g. "Publix Rotisserie Chicken Wrap")
+        serving_name:  Serving description (e.g. "1 wrap", "100g")
+        serving_grams: Weight of one serving in grams
+        energy_kcal:   Calories per serving
+        protein_g:     Protein per serving in grams
+        fat_g:         Total fat per serving in grams
+        carbs_g:       Net carbs per serving in grams
+        fiber_g:       Fiber per serving in grams (default 0)
+
+    Returns {"food_id": ..., "food_source_id": ..., "name": ...}
+    """
+    client = _get_client()
+    return client.create_custom_food(
+        name=name,
+        serving_name=serving_name,
+        serving_grams=serving_grams,
+        energy_kcal=energy_kcal,
+        protein_g=protein_g,
+        fat_g=fat_g,
+        carbs_g=carbs_g,
+        fiber_g=fiber_g,
+    )
+
+
+@mcp.tool()
 def remove_food_entry(serving_id: str) -> dict:
     """
     Remove a food entry from the Cronometer diary.
