@@ -143,7 +143,8 @@ def create_custom_food(
 
     Use this when search_food returns no close match.  Estimate the nutrients
     from your nutritional knowledge and create a named entry so it appears
-    correctly in the diary.
+    correctly in the diary.  Net Carbs is computed automatically by Cronometer
+    as (carbs_g - fiber_g), so enter total carbs and fiber separately.
 
     Args:
         name:          Food name (e.g. "Publix Rotisserie Chicken Wrap")
@@ -152,8 +153,8 @@ def create_custom_food(
         energy_kcal:   Calories per serving
         protein_g:     Protein per serving in grams
         fat_g:         Total fat per serving in grams
-        carbs_g:       Net carbs per serving in grams
-        fiber_g:       Fiber per serving in grams (default 0)
+        carbs_g:       Total carbohydrates per serving in grams
+        fiber_g:       Dietary fiber per serving in grams (default 0)
 
     Returns {"food_id": ..., "food_source_id": ..., "name": ...}
     """

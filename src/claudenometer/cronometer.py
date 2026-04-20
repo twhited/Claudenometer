@@ -112,6 +112,57 @@ GWT_UPDATE_DIARY = (
     "{weight_grams}|{food_source_id}|A|{food_id}|0|1|"
 )
 
+# Payload captured from live Cronometer traffic (addFood, 2026-04-20).
+# Variable slots: {gwt_header}, {nonce}, {user_id}, {food_name},
+#                 {serving_name}, {serving_grams},
+#                 {energy}, {protein}, {fat}, {carbs}, {fiber}
+# All nutrient values are per-serving integers (kcal / grams).
+# Net Carbs is computed by Cronometer server-side (carbs - fiber).
+GWT_ADD_FOOD = (
+    "7|0|31|https://cronometer.com/cronometer/|"
+    "{gwt_header}|"
+    "com.cronometer.shared.rpc.CronometerService|"
+    "addFood|java.lang.String/2004016611|"
+    "I|com.cronometer.shared.foods.models.Food/2097636843|"
+    "com.cronometer.shared.foods.models.IngredientSubstitutions/1892525086|"
+    "{nonce}|java.util.ArrayList/4159755760||"
+    "com.cronometer.shared.foods.NutritionLabelType/1598919019|"
+    "com.cronometer.shared.foods.models.FoodMeasures/2106205728|"
+    "com.cronometer.shared.foods.models.Measure/824760657|"
+    "{serving_name}|"
+    "com.cronometer.shared.foods.models.Measure$Type/2365167904|"
+    "com.cronometer.shared.foods.models.NutrientMap/168231382|"
+    "com.cronometer.shared.foods.models.NutrientMap$NutrientFilter/1990310964|"
+    "java.util.HashMap/1797211028|"
+    "java.lang.Integer/3438268394|"
+    "com.cronometer.shared.foods.models.Nutrient/331784102|"
+    "com.cronometer.shared.foods.models.Nutrient$Type/4187872513|"
+    "Custom|java.util.HashSet/3273092938|"
+    "com.cronometer.shared.foods.models.Translation/4034452093|"
+    "com.cronometer.shared.user.models.Language/1257207975|"
+    "en|English|https://cdn1.cronometer.com/media/flags/us.png|"
+    "{food_name}|com.cronometer.shared.foods.FoodType/2323555378|"
+    "1|2|3|4|4|5|6|7|8|9|{user_id}|"
+    "7|0|0|10|0|0|11|0|0|0|0|12|1|A|13|0|10|1|14|1|0|0|0|0|"
+    "15|16|2|{serving_grams}|17|18|0|19|15|"
+    "20|208|21|{energy}|208|22|0|"
+    "20|204|21|{fat}|204|-13|"
+    "20|606|21|0|606|-13|"
+    "20|605|21|0|605|-13|"
+    "20|601|21|0|601|-13|"
+    "20|307|21|0|307|-13|"
+    "20|205|21|{carbs}|205|-13|"
+    "20|291|21|{fiber}|291|-13|"
+    "20|269|21|0|269|-13|"
+    "20|10009|21|0|10009|-13|"
+    "20|203|21|{protein}|203|-13|"
+    "20|324|21|0|324|-13|"
+    "20|301|21|0|301|-13|"
+    "20|303|21|0|303|-13|"
+    "20|306|21|0|306|-13|"
+    "19|0|0|23|24|0|10|1|25|26|27|28|29|28|30|0|31|0|{user_id}|0|"
+)
+
 GWT_REMOVE_SERVING = (
     "7|0|8|https://cronometer.com/cronometer/|"
     "{gwt_header}|"
@@ -688,21 +739,36 @@ class CronometerClient:
         Create a custom food in the user's Cronometer account.
 
         Nutrients are per-serving (for serving_grams weight).
+        Net Carbs is computed by Cronometer automatically (carbs - fiber).
         Returns {"food_id": int, "food_source_id": int, "name": str}.
-
-        NOTE: The exact GWT-RPC payload for saveFood has not been captured
-        from live traffic yet.  This method will raise CronometerError with
-        the raw server response so the payload can be reverse-engineered.
-        To capture it: open Cronometer in Chrome → DevTools → Network tab →
-        create a custom food → copy the saveFood request payload and share it.
         """
         self._ensure_logged_in()
+        body = (
+            GWT_ADD_FOOD
+            .replace("{gwt_header}", self.gwt_header)
+            .replace("{nonce}", self._nonce or "")
+            .replace("{user_id}", self._user_id or "")
+            .replace("{food_name}", name)
+            .replace("{serving_name}", serving_name)
+            .replace("{serving_grams}", str(int(round(serving_grams))))
+            .replace("{energy}", str(int(round(energy_kcal))))
+            .replace("{protein}", str(int(round(protein_g))))
+            .replace("{fat}", str(int(round(fat_g))))
+            .replace("{carbs}", str(int(round(carbs_g))))
+            .replace("{fiber}", str(int(round(fiber_g))))
+        )
+        self._gwt_post(body)
+
+        # Find the newly created food to return its IDs.
+        results = self.find_foods(name, max_results=10)
+        for r in results:
+            if r["name"] == name:
+                return {"food_id": r["food_id"], "food_source_id": r["food_source_id"], "name": name}
+        if results:
+            return {"food_id": results[0]["food_id"], "food_source_id": results[0]["food_source_id"], "name": name}
         raise CronometerError(
-            "create_custom_food is not yet implemented: the saveFood GWT-RPC "
-            "payload has not been captured from live Cronometer traffic. "
-            "To implement this, open Cronometer in Chrome DevTools → Network → "
-            "create any custom food → find the POST to /cronometer/app → "
-            "copy the request body and share it."
+            f"Custom food '{name}' was created but could not be found in search. "
+            "Try searching manually in Cronometer."
         )
 
     # -----------------------------------------------------------------------

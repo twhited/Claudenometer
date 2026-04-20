@@ -11,10 +11,11 @@ When the user describes food they ate:
 3. If the serving size is ambiguous, call `get_food_details(food_source_id)` to get all
    available measures and ask the user to pick one.
 4. **If no close match is found in the database**, create a custom food entry:
-   - Use your nutritional knowledge to estimate calories, protein, fat, net carbs,
-     and fiber per 100g (or per the stated serving size).
-   - Call `create_custom_food` with the food name, serving size (grams), and estimated
-     nutrients.  This adds it to the user's Cronometer custom foods.
+   - Use your nutritional knowledge to estimate calories, protein, fat,
+     total carbs, and fiber for the stated serving size.
+   - Call `create_custom_food` with the food name, serving size in grams, and those
+     nutrients.  Cronometer will compute Net Carbs = carbs_g − fiber_g automatically.
+     This adds it to the user's Cronometer custom foods.
    - Use the returned `food_id` and `food_source_id` to log the entry as normal.
    - Tell the user: "I didn't find an exact match, so I created a custom entry for
      [food name] with estimated macros: X kcal, Xg protein, Xg fat, Xg net carbs."
