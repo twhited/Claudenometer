@@ -12,8 +12,10 @@ When the user describes food they ate:
    available measures and ask the user to pick one.
 4. Once confirmed, call `add_food_entry` with:
    - `food_id` and `food_source_id` from `search_food`
-   - `measure_id` and `weight_grams` from `get_food_details`
-   - `quantity` = number of that measure (e.g. 2 for "2 large eggs")
+   - `weight_grams` = total grams for the serving.  Compute from the
+     `measure_desc` in the search result (e.g. "1 large - 50g" × 2 = 100g).
+     Call `get_food_details(food_source_id)` if you need precise grams for
+     a specific measure (e.g. "1 cup", "1 slice").
    - `diary_group` = 1 Breakfast / 2 Lunch / 3 Dinner / 4 Snacks
 5. Confirm back to the user: "Logged 2 scrambled eggs (200 kcal)."
 

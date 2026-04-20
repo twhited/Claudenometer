@@ -72,12 +72,11 @@ def get_food_details(food_source_id: int) -> dict:
     Return all available serving size options for a specific food.
 
     Use this after search_food when you need the full list of measures
-    (e.g. "1 cup", "100g", "1 slice") before logging.
+    (e.g. "1 cup", "100g", "1 slice") with their weight_grams before logging.
 
     Each measure contains:
-      - measure_id: pass to add_food_entry
       - description: human-readable measure (e.g. "1 large - 50g")
-      - weight_grams: weight in grams for this measure
+      - weight_grams: weight in grams for this measure (pass this to add_food_entry)
     """
     client = _get_client()
     return client.get_food(food_source_id)
@@ -87,8 +86,6 @@ def get_food_details(food_source_id: int) -> dict:
 def add_food_entry(
     food_id: int,
     food_source_id: int,
-    measure_id: int,
-    quantity: float,
     weight_grams: float,
     date: str = "today",
     diary_group: int = 1,
@@ -99,27 +96,43 @@ def add_food_entry(
     Args:
         food_id:        from search_food()
         food_source_id: from search_food()
-        measure_id:     from get_food_details(); pass 0 to use weight_grams directly
-        quantity:       number of servings (or grams when measure_id=0)
-        weight_grams:   total weight in grams for this serving
+        weight_grams:   total weight in grams for this serving.
+                        Multiply the per-serving grams from measure_desc by the
+                        number of servings (e.g. "1 large - 50g" × 2 = 100g).
+                        Call get_food_details() to see all available measures.
         date:           "YYYY-MM-DD" or "today" (default)
         diary_group:    1=Breakfast, 2=Lunch, 3=Dinner, 4=Snacks (default 1)
 
-    Returns {"serving_id": ..., "food_id": ..., "food_source_id": ...}
+    Returns {"serving_id": ..., "food_id": ..., "food_source_id": ..., "date": ...}
     """
     client = _get_client()
     diary_date = None if date == "today" else date_cls.fromisoformat(date)
     result = client.add_serving(
         food_id=food_id,
         food_source_id=food_source_id,
-        measure_id=measure_id,
-        quantity=quantity,
+        measure_id=0,  # always use UNIVERSAL_MEASURE_ID; food-specific IDs cause ghost entries
+        quantity=weight_grams,
         weight_grams=weight_grams,
         diary_date=diary_date,
         diary_group=diary_group,
     )
     result["date"] = date
     return result
+
+
+@mcp.tool()
+def remove_food_entry(serving_id: str) -> dict:
+    """
+    Remove a food entry from the Cronometer diary.
+
+    Args:
+        serving_id: the serving_id returned by add_food_entry
+
+    Returns {"success": True, "serving_id": ...}
+    """
+    client = _get_client()
+    client.remove_serving(serving_id)
+    return {"success": True, "serving_id": serving_id}
 
 
 @mcp.tool()

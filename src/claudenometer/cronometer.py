@@ -112,6 +112,15 @@ GWT_UPDATE_DIARY = (
     "{weight_grams}|{food_source_id}|A|{food_id}|0|1|"
 )
 
+GWT_REMOVE_SERVING = (
+    "7|0|8|https://cronometer.com/cronometer/|"
+    "{gwt_header}|"
+    "com.cronometer.shared.rpc.CronometerService|"
+    "removeServing|java.lang.String/2004016611|"
+    "J|I|{nonce}|"
+    "1|2|3|4|3|5|6|7|8|{serving_id}|{user_id}|"
+)
+
 
 # ---------------------------------------------------------------------------
 # Exceptions
@@ -647,6 +656,21 @@ class CronometerClient:
             "food_id": int(fields_m.group(1)),
             "food_source_id": int(fields_m.group(3)),
         }
+
+    def remove_serving(self, serving_id: str) -> bool:
+        """Remove a diary entry by its serving_id."""
+        self._ensure_logged_in()
+        body = (
+            GWT_REMOVE_SERVING
+            .replace("{gwt_header}", self.gwt_header)
+            .replace("{nonce}", self._nonce or "")
+            .replace("{user_id}", self._user_id or "")
+            .replace("{serving_id}", serving_id)
+        )
+        raw = self._gwt_post(body)
+        if "//OK" not in raw:
+            raise CronometerError(f"removeServing unexpected response: {raw[:200]}")
+        return True
 
     # -----------------------------------------------------------------------
     # Public API — diary read (CSV export)
