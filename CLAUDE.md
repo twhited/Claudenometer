@@ -8,8 +8,13 @@ Cronometer diary via the Claudenometer MCP tools.
 When the user describes food they ate:
 1. Call `search_food` with a clear search term (e.g. "scrambled eggs", "whole wheat toast").
 2. If multiple plausible matches exist, show the top 2–3 and ask which to use.
-3. If the serving size is ambiguous, show the available serving options and ask.
-4. Once confirmed, call `add_food_entry`.
+3. If the serving size is ambiguous, call `get_food_details(food_source_id)` to get all
+   available measures and ask the user to pick one.
+4. Once confirmed, call `add_food_entry` with:
+   - `food_id` and `food_source_id` from `search_food`
+   - `measure_id` and `weight_grams` from `get_food_details`
+   - `quantity` = number of that measure (e.g. 2 for "2 large eggs")
+   - `diary_group` = 1 Breakfast / 2 Lunch / 3 Dinner / 4 Snacks
 5. Confirm back to the user: "Logged 2 scrambled eggs (200 kcal)."
 
 Keep the conversation natural.  If the user says "I had eggs and toast for

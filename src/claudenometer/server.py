@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import date as date_cls
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -23,8 +24,9 @@ load_dotenv()
 
 mcp = FastMCP("Claudenometer", instructions=(
     "You are a food logging assistant connected to Cronometer. "
-    "When a user logs food, search for it with search_food, pick the best match, "
-    "and confirm with the user before calling add_food_entry. "
+    "When a user logs food, call search_food first. "
+    "If the serving size is unclear call get_food_details to see all measures. "
+    "Confirm the food and amount with the user, then call add_food_entry. "
     "When asked about progress, call get_daily_nutrition and show a clear summary."
 ))
 
@@ -36,12 +38,11 @@ def _get_client() -> CronometerClient:
     if _client is None:
         email = os.environ.get("CRONOMETER_EMAIL", "")
         password = os.environ.get("CRONOMETER_PASSWORD", "")
-        tz_offset = int(os.environ.get("CRONOMETER_TZ_OFFSET", "0"))
         if not email or not password:
             raise CronometerError(
                 "CRONOMETER_EMAIL and CRONOMETER_PASSWORD must be set in .env"
             )
-        _client = CronometerClient(email, password, tz_offset)
+        _client = CronometerClient(email, password)
     return _client
 
 
@@ -55,58 +56,70 @@ def search_food(query: str) -> list[dict]:
     Search the Cronometer food database.
 
     Returns up to 25 foods matching the query.  Each item contains:
-      - food_source_id: pass this to add_food_entry
+      - food_id: pass to add_food_entry
+      - food_source_id: pass to get_food_details or add_food_entry
       - name: human-readable food name
-      - servings: list of {serving_id, measure, grams} options
+      - measure_desc: default serving description (e.g. "1 large - 50g")
+      - score: relevance score
     """
     client = _get_client()
-    return client.search_foods(query)
+    return client.find_foods(query)
 
 
 @mcp.tool()
-def get_food_details(food_source_id: str) -> dict:
+def get_food_details(food_source_id: int) -> dict:
     """
-    Return the serving size options for a specific food.
+    Return all available serving size options for a specific food.
 
-    Use this when search_food results need more detail before logging.
+    Use this after search_food when you need the full list of measures
+    (e.g. "1 cup", "100g", "1 slice") before logging.
+
+    Each measure contains:
+      - measure_id: pass to add_food_entry
+      - description: human-readable measure (e.g. "1 large - 50g")
+      - weight_grams: weight in grams for this measure
     """
     client = _get_client()
-    results = client.search_foods(food_source_id, max_results=5)
-    for food in results:
-        if food.get("food_source_id") == food_source_id:
-            return food
-    # Fall back to first result if exact ID isn't in the list
-    return results[0] if results else {"error": "Food not found"}
+    return client.get_food(food_source_id)
 
 
 @mcp.tool()
 def add_food_entry(
-    food_source_id: str,
-    serving_id: int,
-    amount: float,
+    food_id: int,
+    food_source_id: int,
+    measure_id: int,
+    quantity: float,
+    weight_grams: float,
     date: str = "today",
+    diary_group: int = 1,
 ) -> dict:
     """
     Log a food serving to the Cronometer diary.
 
     Args:
+        food_id:        from search_food()
         food_source_id: from search_food()
-        serving_id:     from the servings list in search_food()
-        amount:         number of servings (e.g. 1.5)
+        measure_id:     from get_food_details(); pass 0 to use weight_grams directly
+        quantity:       number of servings (or grams when measure_id=0)
+        weight_grams:   total weight in grams for this serving
         date:           "YYYY-MM-DD" or "today" (default)
+        diary_group:    1=Breakfast, 2=Lunch, 3=Dinner, 4=Snacks (default 1)
 
-    Returns {"success": True, "food_source_id": ..., "amount": ..., "date": ...}
+    Returns {"serving_id": ..., "food_id": ..., "food_source_id": ...}
     """
     client = _get_client()
-    diary_date = None if date == "today" else date
-    client.add_serving(food_source_id, serving_id, amount, diary_date)
-    return {
-        "success": True,
-        "food_source_id": food_source_id,
-        "serving_id": serving_id,
-        "amount": amount,
-        "date": diary_date or "today",
-    }
+    diary_date = None if date == "today" else date_cls.fromisoformat(date)
+    result = client.add_serving(
+        food_id=food_id,
+        food_source_id=food_source_id,
+        measure_id=measure_id,
+        quantity=quantity,
+        weight_grams=weight_grams,
+        diary_date=diary_date,
+        diary_group=diary_group,
+    )
+    result["date"] = date
+    return result
 
 
 @mcp.tool()
@@ -120,9 +133,8 @@ def get_daily_nutrition(date: str = "today") -> dict:
     Returns:
         {date, energy_kcal, protein_g, carbs_g, fat_g, fiber_g}
     """
-    from datetime import date as date_cls
     client = _get_client()
-    diary_date = date_cls.today().isoformat() if date == "today" else date
+    diary_date = date_cls.today() if date == "today" else date_cls.fromisoformat(date)
     return client.get_daily_nutrition(diary_date)
 
 
@@ -134,21 +146,20 @@ def get_food_log(date: str = "today") -> list[dict]:
     Args:
         date: "YYYY-MM-DD" or "today" (default)
 
-    Returns a list of {name, amount, measure, energy_kcal}.
+    Returns a list of {name, amount, unit, meal, energy_kcal, protein_g, carbs_g, fat_g}.
     """
-    from datetime import date as date_cls
     client = _get_client()
-    diary_date = date_cls.today().isoformat() if date == "today" else date
+    diary_date = date_cls.today() if date == "today" else date_cls.fromisoformat(date)
     return client.get_food_log(diary_date)
 
 
 @mcp.tool()
 def refresh_connection() -> dict:
     """
-    Re-fetch the Cronometer GWT permutation hash and re-authenticate.
+    Re-fetch the Cronometer GWT hashes and re-authenticate.
 
     Call this if other tools start returning errors after a Cronometer
-    frontend redeploy (which changes the internal hash).  No restart needed.
+    frontend redeploy (which changes the internal hashes).  No restart needed.
     """
     global _client
     client = _get_client()

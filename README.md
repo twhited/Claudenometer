@@ -6,12 +6,12 @@ MCP server that gives Claude direct read/write access to your [Cronometer](https
 
 | Tool | What it does |
 |------|-------------|
-| `search_food` | Search Cronometer's food database |
-| `get_food_details` | Get serving size options for a specific food |
-| `add_food_entry` | Log a food serving to the diary |
+| `search_food` | Search Cronometer's food database (returns food_id, food_source_id, name, measure_desc) |
+| `get_food_details` | Get all serving size options for a food (returns measure_id, description, weight_grams) |
+| `add_food_entry` | Log a food serving to the diary (requires food_id, food_source_id, measure_id, quantity, weight_grams) |
 | `get_daily_nutrition` | Get macro totals (calories, protein, carbs, fat, fiber) |
 | `get_food_log` | List all logged entries for a day |
-| `refresh_connection` | Re-fetch the GWT hash and re-authenticate (survives Cronometer redeploys) |
+| `refresh_connection` | Re-fetch GWT hashes and re-authenticate (survives Cronometer redeploys) |
 
 ---
 
