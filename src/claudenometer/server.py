@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import date as date_cls
+from datetime import date as date_cls, datetime, timedelta, timezone
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -31,6 +31,13 @@ mcp = FastMCP("Claudenometer", instructions=(
 ))
 
 _client: Optional[CronometerClient] = None
+
+
+def _local_today() -> date_cls:
+    """Return today's date in the user's local timezone (from CRONOMETER_TZ_OFFSET)."""
+    tz_offset = int(os.environ.get("CRONOMETER_TZ_OFFSET", "0"))
+    tz = timezone(timedelta(minutes=tz_offset))
+    return datetime.now(tz).date()
 
 
 def _get_client() -> CronometerClient:
@@ -106,7 +113,7 @@ def add_food_entry(
     Returns {"serving_id": ..., "food_id": ..., "food_source_id": ..., "date": ...}
     """
     client = _get_client()
-    diary_date = None if date == "today" else date_cls.fromisoformat(date)
+    diary_date = _local_today() if date == "today" else date_cls.fromisoformat(date)
     result = client.add_serving(
         food_id=food_id,
         food_source_id=food_source_id,
@@ -147,7 +154,7 @@ def get_daily_nutrition(date: str = "today") -> dict:
         {date, energy_kcal, protein_g, carbs_g, fat_g, fiber_g}
     """
     client = _get_client()
-    diary_date = date_cls.today() if date == "today" else date_cls.fromisoformat(date)
+    diary_date = _local_today() if date == "today" else date_cls.fromisoformat(date)
     return client.get_daily_nutrition(diary_date)
 
 
@@ -162,7 +169,7 @@ def get_food_log(date: str = "today") -> list[dict]:
     Returns a list of {name, amount, unit, meal, energy_kcal, protein_g, carbs_g, fat_g}.
     """
     client = _get_client()
-    diary_date = date_cls.today() if date == "today" else date_cls.fromisoformat(date)
+    diary_date = _local_today() if date == "today" else date_cls.fromisoformat(date)
     return client.get_food_log(diary_date)
 
 
